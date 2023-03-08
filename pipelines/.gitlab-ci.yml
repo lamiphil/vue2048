@@ -1,0 +1,70 @@
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_COMMIT_REF_NAME == 'feature/*'
+stages:
+    - build
+    - quality
+
+variables:
+  VERSION: "{$CI_PROJECT_NAME}_{$PKG_VERSION}"
+
+image: node:latest
+
+cache:
+  key:
+    files:
+      - pnpm-lock.yaml
+  paths:
+    - .pnpm-store
+    - node_modules/
+
+before_script:
+    - curl -f https://get.pnpm.io/v6.16.js | node - add --global pnpm@7
+    - pnpm config set store-dir .pnpm-store
+
+restore-dependencies:
+    stage: build
+    script:
+        - pnpm install
+
+build-package:
+    stage: build
+    needs:
+        - restore-dependencies
+    script:
+        - pnpm build
+    rules:
+        - if : $CI_PIPELINE_SOURCE != "web"
+
+build-artifact:
+    stage: build
+    needs:
+        - build-package
+    script:
+        - pnpm build
+    artifacts:
+        name: $VERSION
+        paths:
+            - dist/
+    rules:
+    - if : $CI_PIPELINE_SOURCE == "web"
+
+static-typing:
+    stage: quality
+    script:
+        - pnpm type-check
+
+lint:
+    stage: quality
+    needs:
+        - static-typing
+    script:
+        - pnpm eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore
+
+test:
+    stage: quality
+    script:
+        - pnpm vitest
+    rules:
+    - if: $CI_COMMIT_BRANCH == "main"
