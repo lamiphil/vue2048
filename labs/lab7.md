@@ -8,7 +8,7 @@
 
 ## Pré-requis
 
-- Avoir créer son compte Azure avec son adresse étudiante et un compte Microsoft
+- Avoir créé son compte Azure avec son adresse étudiante et un compte Microsoft
 
 ## 0. Vérification de la souscription
 
