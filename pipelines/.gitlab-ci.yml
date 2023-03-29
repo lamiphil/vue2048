@@ -1,70 +1,50 @@
+variables:
+   QA_TOKEN: "a095f0d1a5a119688ff6f9471de6c917525a5b84f0f38f357e5642039cc41a362-b3bade28-131a-423e-be72-d04c7b6550b4003213571"
+   PROD_TOKEN: "47d168825d7678a9435c642c97ce7d50132f67e1744d391c64259b85faa88c162-cba043b7-691b-4c3e-86f4-a0cde6cf1f53003213512"
+
+stages:
+  - build
+  - deploy
+  - qa
+  - prod
+
 workflow:
   rules:
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
-    - if: $CI_COMMIT_REF_NAME == 'feature/*'
-stages:
-    - build
-    - quality
+    - if: $CI_PIPELINE_SOURCE != 'merge_request_event'
 
-variables:
-  VERSION: "{$CI_PROJECT_NAME}_{$PKG_VERSION}"
-
-image: node:latest
-
-cache:
-  key:
-    files:
-      - pnpm-lock.yaml
-  paths:
-    - .pnpm-store
-    - node_modules/
-
-before_script:
+default:
+  image: node:latest
+  cache: &global_cache
+    key:
+      files:
+        - pnpm-lock.yaml
+    paths:
+      - .pnpm-store
+      - node_modules/
+    policy: pull
+  before_script:
     - curl -f https://get.pnpm.io/v6.16.js | node - add --global pnpm@7
     - pnpm config set store-dir .pnpm-store
 
-restore-dependencies:
-    stage: build
-    script:
-        - pnpm install
+build:
+  stage: build
+  cache:
+    <<: *global_cache
+    policy: pull-push
+  script:
+    - pnpm install
+    - pnpm build
+  artifacts:
+    paths:
+      - dist/*
 
-build-package:
-    stage: build
-    needs:
-        - restore-dependencies
-    script:
-        - pnpm build
-    rules:
-        - if : $CI_PIPELINE_SOURCE != "web"
+deploy-qa:
+   stage: qa
+   script:
+   - swa deploy -a ./dist --app-name stapp-vue2048-qa -d $QA_TOKEN
 
-build-artifact:
-    stage: build
-    needs:
-        - build-package
-    script:
-        - pnpm build
-    artifacts:
-        name: $VERSION
-        paths:
-            - dist/
-    rules:
-    - if : $CI_PIPELINE_SOURCE == "web"
-
-static-typing:
-    stage: quality
-    script:
-        - pnpm type-check
-
-lint:
-    stage: quality
-    needs:
-        - static-typing
-    script:
-        - pnpm eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore
-
-test:
-    stage: quality
-    script:
-        - pnpm vitest
-    rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+deploy-prod:
+   stage: prod
+   script:
+   - swa deploy -a ./dist --app-name stapp-vue2048-prod -d $PROD_TOKEN --env Production
