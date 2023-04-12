@@ -39,6 +39,7 @@ deploy-qa:
    stage: qa
    environment:
     name: staging
+    url: https://polite-stone-008c46503.2.azurestaticapps.net
    script:
    - npm install -g @azure/static-web-apps-cli
    - swa deploy -a ./dist --app-name stapp-vue2048-qa -d $AZURE_SWA_QA_TOKEN --env Production
@@ -47,6 +48,7 @@ deploy-prod:
    stage: prod
    environment:
     name: production
+    url: https://red-ground-077aa6303.2.azurestaticapps.net
    script:
    - npm install -g @azure/static-web-apps-cli
    - swa deploy -a ./dist --app-name stapp-vue2048-prod -d $AZURE_SWA_PROD_TOKEN --env Production
