@@ -1,13 +1,11 @@
 name: Build when commit on main
 
-on:
-    push:
-        branches:
-            - main
+on: [push, pull_request]
 
 jobs:
     build:
         runs-on: node-latest
+        if: github.ref == 'refs/heads/main'
         steps:
             - name: Checkout
               uses: actions/checkout@v2
@@ -23,3 +21,22 @@ jobs:
                   name: dist
                   path: dist
 
+    quality:
+        runs-on: node-latest
+        needs: build
+        if: github.event_name == 'pull_request'
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v2
+
+            - name: Install pnpm
+              run: pnpm install
+
+            - name: Build
+              run: pnpm build
+
+            - name: Linting
+              run: pnpm lint
+            
+            - name: Static Type Checking
+              run: pnpm type-check
