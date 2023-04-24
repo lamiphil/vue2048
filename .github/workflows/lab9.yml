@@ -1,0 +1,23 @@
+name: Build when commit on main
+
+on:
+    push:
+        branches:
+            - main
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Install pnpm
+              run: pnpm install
+
+            - name: Build
+              run: pnpm build
+
+            - name: Create artifact
+              uses: actions/upload-artifact@v2
+              with:
+                  name: dist
+                  path: dist
+
